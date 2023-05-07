@@ -19,10 +19,15 @@ const simpleLightBox = () => new SimpleLightbox('.gallery a', {});
 async function onLoadMore() {
   try {
     const value = searchForm[0].value.trim();
-    const { hits } = await searchPhoto(value, page);
+    const { hits, totalHits} = await searchPhoto(value, page);
+    BtnLoadMore.style.display = "block";
+
+    checkQuantityPhoto(hits, totalHits);
+
     gallery.insertAdjacentHTML('beforeend', createMarkup(hits));
     simpleLightBox();
     page += 1;
+
   } catch (error) {
     console.log(error);
   }
@@ -32,34 +37,23 @@ async function onSubmit(evt) {
   evt.preventDefault();
   page = 1;
   gallery.innerHTML = '';
-  // console.dir(evt.target[0].value);
   inputValue = evt.target[0]?.value?.trim();
-  BtnLoadMore.style.display = 'block';
+
 
   if (!inputValue) {
     return Notiflix.Notify.failure('Please, add in seach form valid value');
   }
 
   try {
-    const result = await searchPhoto(inputValue, page);
+    const { hits, totalHits} = await searchPhoto(inputValue, page);
+    BtnLoadMore.style.display = "block";
 
-    if (result.totalHits === 0) {
-      Notiflix.Notify.failure(
-        'Sorry, there are no images matching your search query. Please try again.'
-      );
-      return;
-    } else {
-      Notiflix.Notify.success(`Hooray! We found ${result.totalHits} images.`);
-      if (result.hits.length < 40) {
-        Notiflix.Notify.info(
-          "We're sorry, but you've reached the end of search results."
-        );
-      }
-      gallery.insertAdjacentHTML('beforeend', createMarkup(result.hits));
+    checkQuantityPhoto(hits, totalHits);
+    gallery.insertAdjacentHTML('beforeend', createMarkup(hits));
 
-      simpleLightBox();
-      page += 1;
-    }
+    simpleLightBox();
+    page += 1;
+    
   } catch (error) {
     console.log(error);
   }
@@ -98,4 +92,26 @@ function createMarkup(arr = []) {
       </div>`
     )
     .join('');
+}
+ 
+async function checkQuantityPhoto(hits, totalHits){
+  if(40 * page >= totalHits){
+    BtnLoadMore.style.display = "none";
+    Notiflix.Notify.info(
+          "We're sorry, but you've reached the end of search results."
+        );
+
+    return;
+  }
+  if (totalHits === 0) {
+    BtnLoadMore.style.display = "none";
+    Notiflix.Notify.failure(
+      'Sorry, there are no images matching your search query. Please try again.'
+    );
+
+    return;
+  } else {
+    Notiflix.Notify.success(`Hooray! We found ${totalHits + 40 - (40 * page)} images.`);
+  }
+
 }
